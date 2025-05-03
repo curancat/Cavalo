@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Miraculos do Cavalo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
+    * { box-sizing: border-box; margin:0; padding:0 }
+    body {
+      background: linear-gradient(to bottom, #d2b48c, #ffffff, #add8e6);
+      font-family: 'Lobster', cursive;
+      display:flex; align-items:center; justify-content:center;
+      height:100vh; position:relative;
+    }
+    .phone {
+      width:320px; height:600px;
+      background: #F0F8FF; border-radius:30px;
+      box-shadow:0 10px 25px rgba(0,0,0,0.3);
+      padding:20px; display:flex;
+      flex-direction:column; justify-content:space-between;
+    }
+    h3 mark {
+      background:#8B4513; color:#fff;
+      padding:5px 10px; border-radius:8px;
+    }
+    h3 { text-align:center; font-size:24px; }
+    .buttons {
+      display:flex; flex-direction:column;
+      align-items:center; gap:8px;
+    }
+    button {
+      width:80%; padding:10px;
+      background:#A9D6E5; border:none;
+      border-radius:20px; font-size:18px;
+      color:#fff; cursor:pointer; transition:.3s;
+    }
+    button:hover { background:#7DC3E1; transform:scale(1.03); }
+    .effect {
+      position:absolute; bottom:20px;
+      width:100%; text-align:center;
+      font-size:18px; color:#5d4037;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <h3><mark>Lindemberg</mark></h3>
+    <div class="buttons">
+      <button onclick="enviarMensagem()">💬 Enviar mensagem</button>
+      <button onclick="lerConversa()">📖 Ler conversa</button>
+      <button onclick="teletransportar()">✨ Viajar</button>
+      <button onclick="verAcessos()">🔍 portais</button>
+    </div>
+    <div class="effect" id="status"></div>
+  </div>
+
+  <script>
+    alert('VOYAGE!');
+
+    const PARTICIPANTES = ['Litlegot','Psique','Abrax','Hell Cat','Beast','Yellowfer'];
+    const ME = 'Lindemberg';
+    const channel = new BroadcastChannel('global_channel');
+    const ACCESS_KEY = 'cavaloAccess'; // guarda { target, expiry }
+
+    // Helpers
+    const now = () => Date.now();
+    function _load(key) {
+      const v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : null;
+    }
+    function _save(key, val) {
+      localStorage.setItem(key, JSON.stringify(val));
+    }
+
+    // Mensagens
+    channel.onmessage = ev => {
+      const { type, data } = ev.data;
+      if (type === 'msg' && data.to === ME) {
+        alert(`📨 De ${data.from}: ${data.text}`);
+      }
+      if (type === 'access' && data.to === ME) {
+        // receber acesso de outro Cavalo
+        const status = document.getElementById('status');
+        status.textContent = `Acesso de teletransporte de ${data.from}!`;
+        setTimeout(() => status.textContent = '', 5000);
+      }
+    };
+
+    function enviarMensagem() {
+      const access = _load(ACCESS_KEY);
+      if (access && now() < access.expiry) {
+        // permitido
+      } else {
+        alert('⚠️ Você não tem acesso ativo a nenhum chat.');
+        return;
+      }
+      let dest = access.target;
+      let txt = prompt(`Mensagem de ${ME} para ${dest}:`);
+      if (!txt||!txt.trim()) return;
+      channel.postMessage({ type:'msg', data:{ from:ME, to:dest, text:txt.trim() } });
+      alert('Mensagem enviada com teletransporte!');
+    }
+
+    function lerConversa() {
+      const access = _load(ACCESS_KEY);
+      if (!access || now() > access.expiry) {
+        alert('⚠️ Sem acesso ativo para ler conversas.');
+        return;
+      }
+      alert(`🗨️ Use a interface de ${access.target} para ler.`);
+    }
+
+    function teletransportar() {
+      let dest = prompt(`Teletransportar-se até quem?\n${PARTICIPANTES.filter(p=>p!==ME).join(', ')}`);
+      if (!PARTICIPANTES.includes(dest)) return alert('Destino inválido.');
+      const expiry = now() + 5*60*1000;
+      _save(ACCESS_KEY, { target: dest, expiry });
+      document.getElementById('status').textContent = `Acesso a ${dest} até ${new Date(expiry).toLocaleTimeString()}`;
+      channel.postMessage({ type:'access', data:{ from:ME, to:dest } });
+    }
+
+    function verAcessos() {
+      const access = _load(ACCESS_KEY);
+      if (!access || now() > access.expiry) {
+        alert('Nenhum acesso ativo.');
+      } else {
+        alert(`Acesso ativo a ${access.target} até ${new Date(access.expiry).toLocaleTimeString()}`);
+      }
+    }
+  </script>
+</body>
+</html>
